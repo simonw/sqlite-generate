@@ -14,7 +14,13 @@ Install this plugin using `pip`:
 
 ## Usage
 
-Usage instructions go here.
+To generate a SQLite database file called `data.db` with 10 randomly named tables in it, run the following:
+
+    sqlite-generate data.db
+
+You can use the `--tables` option to generate a different number of tables:
+
+    sqlite-generate data.db --tables 20
 
 ## Development
 
