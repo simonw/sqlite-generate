@@ -33,13 +33,21 @@ def cli(db_path, tables, rows, columns, seed):
         rows_low = rows_high = int(rows)
     else:
         rows_low, rows_high = map(int, rows.split(","))
-    for i in range(tables):
-        table_name = None
-        while table_name is None or db[table_name].exists():
-            table_name = "_".join(fake.words())
-        column_defs, generate = record_builder(fake, columns)
-        with db.conn:
-            db[table_name].create(column_defs, pk="id")
-            db[table_name].insert_all(
-                generate() for j in range(fake.random.randint(rows_low, rows_high))
-            )
+    # Make a plan first, so we can update a progress bar
+    plan = [fake.random.randint(rows_low, rows_high) for i in range(tables)]
+    total_to_do = sum(plan)
+    with click.progressbar(length=total_to_do, show_pos=True, show_percent=True) as bar:
+        for num_rows in plan:
+            table_name = None
+            while table_name is None or db[table_name].exists():
+                table_name = "_".join(fake.words())
+            column_defs, generate = record_builder(fake, columns)
+            with db.conn:
+                db[table_name].create(column_defs, pk="id")
+
+                def yield_em():
+                    for j in range(num_rows):
+                        yield generate()
+                        bar.update(1)
+
+                db[table_name].insert_all(yield_em())
