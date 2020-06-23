@@ -1,0 +1,47 @@
+name: Deploy demo
+
+on:
+  push:
+    branches:
+    - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - uses: actions/cache@v2
+      name: Configure pip caching
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.py') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Install Python dependencies
+      run: |
+        pip install -e setup.py
+        pip install datasette datasette-publish-now
+    - name: Build database
+      run: sqlite-generate demo.db
+    - name: Setup Node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+    - name: Deploy Datasette using Vercel
+      env:
+        NOW_TOKEN: ${{ secrets.NOW_TOKEN }}
+      run: |-
+        datasette publish now demo.db \
+          --token $NOW_TOKEN \
+          --project sqlite-generate \
+          --title "sqlite-generate demo" \
+          --about_url "https://github.com/simonw/sqlite-generate" \
+          --about_url "simonw/sqlite-generate" \
+          --plugins-dir plugins \
+          --template-dir templates \
+          --public
