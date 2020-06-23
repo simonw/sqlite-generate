@@ -7,7 +7,7 @@ import sqlite_utils
 def test_generate():
     runner = CliRunner()
     with runner.isolated_filesystem():
-        result = runner.invoke(cli, ["data.db"])
+        result = runner.invoke(cli, ["data.db"], catch_exceptions=False)
         assert 0 == result.exit_code
         db = sqlite_utils.Database("data.db")
         assert 10 == len(db.table_names())
@@ -19,7 +19,7 @@ def test_generate():
 def test_rows(rows, low, high):
     runner = CliRunner()
     with runner.isolated_filesystem():
-        result = runner.invoke(cli, ["data.db", rows])
+        result = runner.invoke(cli, ["data.db", rows], catch_exceptions=False)
         assert 0 == result.exit_code, result.output
         db = sqlite_utils.Database("data.db")
         assert 10 == len(db.table_names())
@@ -32,7 +32,9 @@ def test_columns(columns):
     runner = CliRunner()
     with runner.isolated_filesystem():
         result = runner.invoke(
-            cli, ["data.db", "--rows=1", "--columns={}".format(columns), "--seed=seed"]
+            cli,
+            ["data.db", "--rows=1", "--columns={}".format(columns), "--seed=seed"],
+            catch_exceptions=False,
         )
         assert 0 == result.exit_code, result.output
         db = sqlite_utils.Database("data.db")
@@ -45,16 +47,22 @@ def test_seed():
     runner = CliRunner()
     with runner.isolated_filesystem():
         runner.invoke(
-            cli, ["one.db", "--tables=1", "--rows=1", "--columns=2", "--seed=dog"]
+            cli,
+            ["one.db", "--tables=1", "--rows=1", "--columns=2", "--seed=dog"],
+            catch_exceptions=False,
         )
         runner.invoke(
-            cli, ["two.db", "--tables=1", "--rows=1", "--columns=2", "--seed=dog"]
+            cli,
+            ["two.db", "--tables=1", "--rows=1", "--columns=2", "--seed=dog"],
+            catch_exceptions=False,
         )
         # Files should be identical
         assert open("one.db", "rb").read() == open("two.db", "rb").read()
         # With a different seed, files should differ:
         runner.invoke(
-            cli, ["three.db", "--tables=1", "--rows=1", "--columns=2", "--seed=cat"]
+            cli,
+            ["three.db", "--tables=1", "--rows=1", "--columns=2", "--seed=cat"],
+            catch_exceptions=False,
         )
         assert open("two.db", "rb").read() != open("three.db", "rb").read()
 
@@ -72,6 +80,7 @@ def test_fks():
                 "--fks=2",
                 "--seed=seed",
             ],
+            catch_exceptions=False,
         )
         assert 0 == result.exit_code, result.output
         db = sqlite_utils.Database("data.db")
@@ -96,6 +105,7 @@ def test_fks_multiple_runs():
                     "--fks=2",
                     "--seed=seed{}".format(i),
                 ],
+                catch_exceptions=False,
             )
             assert 0 == result.exit_code, result.output
         db = sqlite_utils.Database("data.db")
@@ -119,6 +129,7 @@ def test_fks_against_empty_table():
                 "--fks=0",
                 "--seed=seed",
             ],
+            catch_exceptions=False,
         )
         # Run it again, with fks (this used to break)
         result = runner.invoke(
@@ -131,6 +142,7 @@ def test_fks_against_empty_table():
                 "--fks=2",
                 "--seed=seed2",
             ],
+            catch_exceptions=False,
         )
         assert 0 == result.exit_code
 
@@ -139,7 +151,9 @@ def test_fts():
     runner = CliRunner()
     with runner.isolated_filesystem():
         result = runner.invoke(
-            cli, ["data.db", "--tables=5", "--fts", "--fks=0", "--seed=seed",],
+            cli,
+            ["data.db", "--tables=5", "--fts", "--fks=0", "--seed=seed",],
+            catch_exceptions=False,
         )
         assert 0 == result.exit_code, result.output
         db = sqlite_utils.Database("data.db")
@@ -153,7 +167,9 @@ def test_fts4():
     runner = CliRunner()
     with runner.isolated_filesystem():
         result = runner.invoke(
-            cli, ["data.db", "--tables=5", "--fts4", "--fks=0", "--seed=seed",],
+            cli,
+            ["data.db", "--tables=5", "--fts4", "--fks=0", "--seed=seed",],
+            catch_exceptions=False,
         )
         assert 0 == result.exit_code, result.output
         db = sqlite_utils.Database("data.db")
