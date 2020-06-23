@@ -38,7 +38,7 @@ By default each table will contain a random number of rows between 0 and 200. Yo
 
 This will insert 20 rows into each table.
 
-    sqlite-generate data.db --tables 500,2000
+    sqlite-generate data.db --rows 500,2000
 
 This inserts a random number of rows between 500 and 2000 into each table.
 
