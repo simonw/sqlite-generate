@@ -1,4 +1,4 @@
-def record_builder(fake, num_columns=2):
+def record_builder(fake, num_columns=2, num_fks=0):
     "Returns {column:defs}, generator that builds records"
     assert num_columns >= 1
 
@@ -31,8 +31,19 @@ def record_builder(fake, num_columns=2):
         random_column_types = fake.random.choices(
             potential_column_types, k=num_columns - 2
         )
+        # If we are generating foreign keys, randomly add those now
+        column_is_fk = [False] * len(random_column_types)
+        if num_fks:
+            random_idxs = fake.random.sample(range(len(column_is_fk)), k=num_fks)
+            for idx in random_idxs:
+                column_is_fk[idx] = True
+                random_column_types[idx] = (int, lambda: None)
+
         column_types.extend(random_column_types)
-        random_column_names = [fake.word() for _ in random_column_types]
+        random_column_names = [
+            fake.word() + ("_id" if column_is_fk[i] else "")
+            for i, _ in enumerate(random_column_types)
+        ]
         columns.extend(random_column_names)
         column_defs.update(
             {

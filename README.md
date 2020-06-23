@@ -42,6 +42,10 @@ You can control the random number seed used with the `--seed` option. This will 
 
     sqlite-generate data.db --seed=myseed
 
+By default each table will contain between 0 and 2 foreign key columns to other tables. You can control this using the `--fks` option, with either a single number or a range:
+
+    sqlite-generate data.db --columns=20 --fks=5,15
+
 ## Development
 
 To contribute to this tool, first checkout the code. Then create a new virtual environment:

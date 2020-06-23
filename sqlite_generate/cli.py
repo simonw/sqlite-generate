@@ -43,9 +43,12 @@ int_range = IntRange()
 @click.option(
     "-c", "--columns", help="Number of columns to create per table", default=5
 )
+@click.option(
+    "--fks", help="Number of foreign keys per table", default="0,2", type=int_range
+)
 @click.option("--seed", help="Specify as seed for the random generator")
 @click.version_option()
-def cli(db_path, tables, rows, columns, seed):
+def cli(db_path, tables, rows, columns, fks, seed):
     "Tool for generating demo SQLite databases"
     db = sqlite_utils.Database(db_path)
     existing_tables = set(db.table_names())
@@ -55,15 +58,24 @@ def cli(db_path, tables, rows, columns, seed):
     if columns < 2:
         raise click.ClickException("--columns must be more than 2")
     rows_low, rows_high = rows
+    fks_low, fks_high = fks
+    if not fks_high < (columns - 1):
+        fks_high = columns - 1
     # Make a plan first, so we can update a progress bar
     plan = [fake.random.randint(rows_low, rows_high) for i in range(tables)]
     total_to_do = sum(plan)
-    with click.progressbar(length=total_to_do, show_pos=True, show_percent=True) as bar:
+    with click.progressbar(
+        length=total_to_do, show_pos=True, show_percent=True, label="Generating rows"
+    ) as bar:
         for num_rows in plan:
             table_name = None
             while table_name is None or db[table_name].exists():
                 table_name = "_".join(fake.words())
-            column_defs, generate = record_builder(fake, columns)
+            column_defs, generate = record_builder(
+                fake,
+                num_columns=columns,
+                num_fks=fake.random.randint(fks_low, fks_high),
+            )
             with db.conn:
                 db[table_name].create(column_defs, pk="id")
 
@@ -73,3 +85,38 @@ def cli(db_path, tables, rows, columns, seed):
                         bar.update(1)
 
                 db[table_name].insert_all(yield_em())
+
+    # Last step: populate those foreign keys
+    if fks_high:
+        # Find all (table, column) pairs that end in _id
+        fk_columns = []
+        for table in db.tables:
+            for column in table.columns_dict:
+                if column.endswith("_id"):
+                    fk_columns.append((table.name, column))
+        table_names = db.table_names()
+        table_pks_cache = {}
+        with click.progressbar(
+            fk_columns,
+            show_pos=True,
+            show_percent=True,
+            label="Populating foreign keys",
+        ) as bar:
+            for table_name, column in bar:
+                other_table = fake.random.choice(table_names)
+                db[table_name].add_foreign_key(column, other_table, "id")
+                if other_table not in table_pks_cache:
+                    table_pks_cache[other_table] = [
+                        r[0]
+                        for r in db.conn.execute(
+                            "select id from [{}]".format(other_table)
+                        ).fetchall()
+                    ]
+                with db.conn:
+                    for row in db.conn.execute(
+                        "select id from [{}]".format(table_name)
+                    ).fetchall():
+                        db[table_name].update(
+                            row[0],
+                            {column: fake.random.choice(table_pks_cache[other_table])},
+                        )
