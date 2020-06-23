@@ -64,6 +64,7 @@ def cli(db_path, tables, rows, columns, fks, seed):
     # Make a plan first, so we can update a progress bar
     plan = [fake.random.randint(rows_low, rows_high) for i in range(tables)]
     total_to_do = sum(plan)
+    created_tables = []
     with click.progressbar(
         length=total_to_do, show_pos=True, show_percent=True, label="Generating rows"
     ) as bar:
@@ -85,15 +86,17 @@ def cli(db_path, tables, rows, columns, fks, seed):
                         bar.update(1)
 
                 db[table_name].insert_all(yield_em())
+                created_tables.append(table_name)
 
     # Last step: populate those foreign keys
     if fks_high:
         # Find all (table, column) pairs that end in _id
         fk_columns = []
-        for table in db.tables:
+        for table_name in created_tables:
+            table = db[table_name]
             for column in table.columns_dict:
                 if column.endswith("_id"):
-                    fk_columns.append((table.name, column))
+                    fk_columns.append((table_name, column))
         table_names = db.table_names()
         table_pks_cache = {}
         with click.progressbar(

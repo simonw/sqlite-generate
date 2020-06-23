@@ -80,3 +80,27 @@ def test_fks():
             assert table.foreign_keys
             fk_cols = [c for c in table.columns_dict if c.endswith("_id")]
             assert len(fk_cols) == 2
+
+
+def test_fks_multiple_runs():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        for i in range(2):
+            result = runner.invoke(
+                cli,
+                [
+                    "data.db",
+                    "--tables=2",
+                    "--rows=1",
+                    "--columns=5",
+                    "--fks=2",
+                    "--seed=seed{}".format(i),
+                ],
+            )
+            assert 0 == result.exit_code, result.output
+        db = sqlite_utils.Database("data.db")
+        # All tables should have columns ending in _id AND foreign keys
+        for table in db.tables:
+            assert table.foreign_keys
+            fk_cols = [c for c in table.columns_dict if c.endswith("_id")]
+            assert len(fk_cols) == 2
