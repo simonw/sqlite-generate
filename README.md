@@ -18,7 +18,7 @@ To generate a SQLite database file called `data.db` with 10 randomly named table
 
     sqlite-generate data.db
 
-You can see a demo of the database generated using this command running in [Datasette](https://github.com/simonw/datasette) at https://sqlite-generate-demo.datasette.io/
+You can see a demo of the database generated using this command running in [Datasette](https://github.com/simonw/datasette) at https://sqlite-generate-demo.datasette.io/ (actually this demo also uses the `--fts` option, see below).
 
 You can use the `--tables` option to generate a different number of tables:
 
