@@ -27,7 +27,7 @@ jobs:
         pip install -e .
         pip install datasette datasette-publish-now
     - name: Build database
-      run: sqlite-generate demo.db --seed seed
+      run: sqlite-generate demo.db --seed seed --fts
     - name: Setup Node.js
       uses: actions/setup-node@v1
       with:

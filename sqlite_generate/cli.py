@@ -46,9 +46,17 @@ int_range = IntRange()
 @click.option(
     "--fks", help="Number of foreign keys per table", default="0,2", type=int_range
 )
+@click.option(
+    "--fts", help="Configure full-text search (FTS5) against text columns", is_flag=True
+)
+@click.option(
+    "--fts4",
+    help="Configure full-text search (FTS4) against text columns",
+    is_flag=True,
+)
 @click.option("--seed", help="Specify as seed for the random generator")
 @click.version_option()
-def cli(db_path, tables, rows, columns, fks, seed):
+def cli(db_path, tables, rows, columns, fks, fts, fts4, seed):
     "Tool for generating demo SQLite databases"
     db = sqlite_utils.Database(db_path)
     existing_tables = set(db.table_names())
@@ -124,3 +132,16 @@ def cli(db_path, tables, rows, columns, fks, seed):
                             row[0],
                             {column: fake.random.choice(options) if options else None},
                         )
+    if fts or fts4:
+        # Configure full-text search
+        with click.progressbar(
+            db.tables,
+            show_pos=True,
+            show_percent=True,
+            label="Configuring FTS{}".format("4" if fts4 else ""),
+        ) as bar:
+            for table in bar:
+                text_columns = [
+                    key for key, value in table.columns_dict.items() if value is str
+                ]
+                table.enable_fts(text_columns, fts_version="FTS4" if fts4 else "FTS5")

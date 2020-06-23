@@ -48,6 +48,12 @@ By default each table will contain between 0 and 2 foreign key columns to other 
 
     sqlite-generate data.db --columns=20 --fks=5,15
 
+To configure [SQLite full-text search](https://www.sqlite.org/fts5.html) for all columns of type text, use `--fts`:
+
+    sqlite-generate data.db --fts
+
+This will use FTS5 by default. To use [FTS4](https://www.sqlite.org/fts3.html) instead, use `--fts4`.
+
 ## Development
 
 To contribute to this tool, first checkout the code. Then create a new virtual environment:

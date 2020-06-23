@@ -133,3 +133,37 @@ def test_fks_against_empty_table():
             ],
         )
         assert 0 == result.exit_code
+
+
+def test_fts():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(
+            cli, ["data.db", "--tables=5", "--fts", "--fks=0", "--seed=seed",],
+        )
+        assert 0 == result.exit_code, result.output
+        db = sqlite_utils.Database("data.db")
+        table_names = db.table_names()
+        assert 30 == len(table_names)
+        for suffix in ("_fts", "_fts_config", "_fts_data", "_fts_idx", "_fts_docsize"):
+            assert any(t for t in table_names if t.endswith(suffix)), suffix
+
+
+def test_fts4():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(
+            cli, ["data.db", "--tables=5", "--fts4", "--fks=0", "--seed=seed",],
+        )
+        assert 0 == result.exit_code, result.output
+        db = sqlite_utils.Database("data.db")
+        table_names = db.table_names()
+        assert 30 == len(table_names)
+        for suffix in (
+            "_fts",
+            "_fts_segments",
+            "_fts_segdir",
+            "_fts_docsize",
+            "_fts_stat",
+        ):
+            assert any(t for t in table_names if t.endswith(suffix))
