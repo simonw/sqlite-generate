@@ -104,3 +104,32 @@ def test_fks_multiple_runs():
             assert table.foreign_keys
             fk_cols = [c for c in table.columns_dict if c.endswith("_id")]
             assert len(fk_cols) == 2
+
+
+def test_fks_against_empty_table():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        runner.invoke(
+            cli,
+            [
+                "data.db",
+                "--tables=1",
+                "--rows=0",
+                "--columns=5",
+                "--fks=0",
+                "--seed=seed",
+            ],
+        )
+        # Run it again, with fks (this used to break)
+        result = runner.invoke(
+            cli,
+            [
+                "data.db",
+                "--tables=2",
+                "--rows=1",
+                "--columns=5",
+                "--fks=2",
+                "--seed=seed2",
+            ],
+        )
+        assert 0 == result.exit_code

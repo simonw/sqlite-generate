@@ -119,7 +119,8 @@ def cli(db_path, tables, rows, columns, fks, seed):
                     for row in db.conn.execute(
                         "select id from [{}]".format(table_name)
                     ).fetchall():
+                        options = table_pks_cache[other_table]
                         db[table_name].update(
                             row[0],
-                            {column: fake.random.choice(table_pks_cache[other_table])},
+                            {column: fake.random.choice(options) if options else None},
                         )
