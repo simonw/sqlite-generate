@@ -4,11 +4,41 @@ import sqlite_utils
 from .utils import record_builder
 
 
+class IntRange(click.ParamType):
+    name = "intrange"
+
+    def convert(self, value, param, ctx):
+        if not (
+            value.isdigit()
+            or (
+                value.count(",") == 1 and all(bit.isdigit() for bit in value.split(","))
+            )
+        ):
+            self.fail(
+                "Use --{param}=low,high or --{param}=exact",
+                format(param=param),
+                param,
+                ctx,
+            )
+        if value.isdigit():
+            value_low = value_high = int(value)
+        else:
+            value_low, value_high = map(int, value.split(","))
+        return value_low, value_high
+
+
+int_range = IntRange()
+
+
 @click.command()
 @click.argument("db_path")
 @click.option("-t", "--tables", help="Number of tables to create", default=10)
 @click.option(
-    "-r", "--rows", help="Number of rows to create per table", default="0,200"
+    "-r",
+    "--rows",
+    help="Number of rows to create per table",
+    default="0,200",
+    type=int_range,
 )
 @click.option(
     "-c", "--columns", help="Number of columns to create per table", default=5
@@ -22,17 +52,9 @@ def cli(db_path, tables, rows, columns, seed):
     fake = Faker()
     if seed:
         fake.seed_instance(seed)
-    if not (
-        rows.isdigit()
-        or (rows.count(",") == 1 and all(bit.isdigit() for bit in rows.split(",")))
-    ):
-        raise click.ClickException("Use --rows=low,high or --rows=exact")
     if columns < 2:
         raise click.ClickException("--columns must be more than 2")
-    if rows.isdigit():
-        rows_low = rows_high = int(rows)
-    else:
-        rows_low, rows_high = map(int, rows.split(","))
+    rows_low, rows_high = rows
     # Make a plan first, so we can update a progress bar
     plan = [fake.random.randint(rows_low, rows_high) for i in range(tables)]
     total_to_do = sum(plan)
