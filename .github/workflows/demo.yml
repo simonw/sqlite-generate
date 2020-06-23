@@ -42,5 +42,5 @@ jobs:
           --title "sqlite-generate demo" \
           --about_url "https://github.com/simonw/sqlite-generate" \
           --about "simonw/sqlite-generate" \
-          --install datastte-block-robots \
+          --install datasette-block-robots \
           --public
