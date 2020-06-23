@@ -24,7 +24,7 @@ jobs:
           ${{ runner.os }}-pip-
     - name: Install Python dependencies
       run: |
-        pip install -e setup.py
+        pip install -e .
         pip install datasette datasette-publish-now
     - name: Build database
       run: sqlite-generate demo.db
