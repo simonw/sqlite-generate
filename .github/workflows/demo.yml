@@ -41,7 +41,5 @@ jobs:
           --project sqlite-generate \
           --title "sqlite-generate demo" \
           --about_url "https://github.com/simonw/sqlite-generate" \
-          --about_url "simonw/sqlite-generate" \
-          --plugins-dir plugins \
-          --template-dir templates \
+          --about "simonw/sqlite-generate" \
           --public
