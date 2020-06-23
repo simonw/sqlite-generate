@@ -48,6 +48,12 @@ int_range = IntRange()
     type=int_range,
 )
 @click.option(
+    "--pks",
+    help="Number of primary key. columns per table",
+    default="1",
+    type=int_range,
+)
+@click.option(
     "--fks", help="Number of foreign keys per table", default="0,2", type=int_range
 )
 @click.option(
@@ -60,7 +66,7 @@ int_range = IntRange()
 )
 @click.option("--seed", help="Specify as seed for the random generator")
 @click.version_option()
-def cli(db_path, tables, rows, columns, fks, fts, fts4, seed):
+def cli(db_path, tables, rows, columns, pks, fks, fts, fts4, seed):
     "Tool for generating demo SQLite databases"
     db = sqlite_utils.Database(db_path)
     existing_tables = set(db.table_names())
@@ -69,6 +75,7 @@ def cli(db_path, tables, rows, columns, fks, fts, fts4, seed):
         fake.seed_instance(seed)
     rows_low, rows_high = rows
     columns_low, columns_high = columns
+    pks_low, pks_high = pks
     fks_low, fks_high = fks
     if fks_high > columns_high:
         fks_high = columns_high
@@ -83,13 +90,14 @@ def cli(db_path, tables, rows, columns, fks, fts, fts4, seed):
             table_name = None
             while table_name is None or db[table_name].exists():
                 table_name = "_".join(fake.words())
-            column_defs, generate = record_builder(
+            column_defs, pks, generate = record_builder(
                 fake,
                 num_columns=fake.random.randint(columns_low, columns_high),
+                num_pks=fake.random.randint(pks_low, pks_high),
                 num_fks=fake.random.randint(fks_low, fks_high),
             )
             with db.conn:
-                db[table_name].create(column_defs, pk="id")
+                db[table_name].create(column_defs, pk=pks[0] if len(pks) == 1 else pks)
 
                 def yield_em():
                     for j in range(num_rows):
@@ -108,33 +116,46 @@ def cli(db_path, tables, rows, columns, fks, fts, fts4, seed):
             for column in table.columns_dict:
                 if column.endswith("_id"):
                     fk_columns.append((table_name, column))
-        table_names = db.table_names()
-        table_pks_cache = {}
-        with click.progressbar(
-            fk_columns,
-            show_pos=True,
-            show_percent=True,
-            label="Populating foreign keys",
-        ) as bar:
-            for table_name, column in bar:
-                other_table = fake.random.choice(table_names)
-                db[table_name].add_foreign_key(column, other_table, "id")
-                if other_table not in table_pks_cache:
-                    table_pks_cache[other_table] = [
-                        r[0]
-                        for r in db.conn.execute(
-                            "select id from [{}]".format(other_table)
+        # Possible target tables are any table without a compound fk
+        possible_target_tables = [
+            name for name in db.table_names() if len(db[name].pks) == 1
+        ]
+        if possible_target_tables:
+            table_pks_cache = {}
+            with click.progressbar(
+                fk_columns,
+                show_pos=True,
+                show_percent=True,
+                label="Populating foreign keys",
+            ) as bar:
+                for table_name, column in bar:
+                    other_table = fake.random.choice(possible_target_tables)
+                    other_pk = db[other_table].pks[0]
+                    db[table_name].add_foreign_key(column, other_table, other_pk)
+                    if other_table not in table_pks_cache:
+                        table_pks_cache[other_table] = [
+                            r[0]
+                            for r in db.conn.execute(
+                                "select {} from [{}]".format(other_pk, other_table)
+                            ).fetchall()
+                        ]
+                    pks = db[table_name].pks
+                    with db.conn:
+                        # Loop through all primary keys
+                        row_pks = db.conn.execute(
+                            "select {} from {}".format(", ".join(pks), table_name)
                         ).fetchall()
-                    ]
-                with db.conn:
-                    for row in db.conn.execute(
-                        "select id from [{}]".format(table_name)
-                    ).fetchall():
-                        options = table_pks_cache[other_table]
-                        db[table_name].update(
-                            row[0],
-                            {column: fake.random.choice(options) if options else None},
-                        )
+                        for row_pk in row_pks:
+                            options = table_pks_cache[other_table]
+                            row_id = row_pk[0] if len(row_pk) == 1 else tuple(row_pk)
+                            db[table_name].update(
+                                row_id,
+                                {
+                                    column: fake.random.choice(options)
+                                    if options
+                                    else None
+                                },
+                            )
     if fts or fts4:
         # Configure full-text search
         with click.progressbar(

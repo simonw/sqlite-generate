@@ -1,14 +1,18 @@
-def record_builder(fake, num_columns=2, num_fks=0):
-    "Returns {column:defs}, generator that builds records"
+def record_builder(fake, num_columns=1, num_pks=1, num_fks=0):
+    "Returns ({column:defs}, pks-tuple, generate-fn)"
     assert num_columns >= 1
 
-    # First column is always ID
-    columns = ["id"]
-    column_defs = {"id": int}
-    column_types = [None]
+    # Primary keys come first
+    if num_pks == 1:
+        columns = ["id"]
+    else:
+        columns = ["id_{}".format(i + 1) for i in range(num_pks)]
+    column_defs = {column: int for column in columns}
+    column_types = [None] * num_pks
+    pks = columns[:]
 
     # If we have a second column, it's always name
-    if num_columns >= 2:
+    if num_columns > num_pks:
         columns.append("name")
         column_defs["name"] = str
         column_types.append((str, fake.name))
@@ -27,7 +31,7 @@ def record_builder(fake, num_columns=2, num_fks=0):
         (int, fake.pyint),
     )
     random_column_types = []
-    if num_columns > 2:
+    if num_columns > (num_pks + 1):
         random_column_types = fake.random.choices(
             potential_column_types, k=num_columns - 2
         )
@@ -52,7 +56,26 @@ def record_builder(fake, num_columns=2, num_fks=0):
             }
         )
 
-    def generate():
-        return {name: pair[1]() for name, pair in zip(columns[1:], column_types[1:])}
+    pk_counters = {pk: 1 for pk in pks}
 
-    return column_defs, generate
+    def generate():
+        d = {}
+        if pks:
+            for pk in pks:
+                d[pk] = pk_counters[pk]
+            # Increment pk
+            idx_to_increment = fake.random.choice(range(len(pks)))
+            pk_counters[pks[idx_to_increment]] += 1
+            # Reset any counters after the one we incremented
+            for idx in range(idx_to_increment + 1, len(pks)):
+                pk_counters[pks[idx]] = 1
+
+        d.update(
+            {
+                name: pair[1]()
+                for name, pair in zip(columns[len(pks) :], column_types[len(pks) :])
+            }
+        )
+        return d
+
+    return column_defs, pks, generate

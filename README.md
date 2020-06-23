@@ -12,13 +12,19 @@ Install this plugin using `pip`:
 
     $ pip install sqlite-generate
 
+## Demo
+
+You can see a demo of the database generated using this command running in [Datasette](https://github.com/simonw/datasette) at https://sqlite-generate-demo.datasette.io/
+
+The demo is generated using the following command:
+
+    sqlite-generate demo.db --seed seed --fts --columns=10 --fks=0,3 --pks=0,2
+
 ## Usage
 
 To generate a SQLite database file called `data.db` with 10 randomly named tables in it, run the following:
 
     sqlite-generate data.db
-
-You can see a demo of the database generated using this command running in [Datasette](https://github.com/simonw/datasette) at https://sqlite-generate-demo.datasette.io/ (actually this demo also uses the `--fts` option, see below).
 
 You can use the `--tables` option to generate a different number of tables:
 
@@ -51,6 +57,10 @@ You can control the random number seed used with the `--seed` option. This will 
 By default each table will contain between 0 and 2 foreign key columns to other tables. You can control this using the `--fks` option, with either a single number or a range:
 
     sqlite-generate data.db --columns=20 --fks=5,15
+
+Each table will have a single primary key column called `id`. You can use the `--pks=` option to change the number of primary key columns on each table. Drop it to 0 to generate [rowid tables](https://www.sqlite.org/rowidtable.html). Increase it above 1 to generate tables with compound primary keys. Or use a range to get a random selection of different primary key layouts:
+
+    sqlite-generate data.db --pks=0,2
 
 To configure [SQLite full-text search](https://www.sqlite.org/fts5.html) for all columns of type text, use `--fts`:
 
