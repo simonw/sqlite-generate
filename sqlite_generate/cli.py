@@ -41,7 +41,11 @@ int_range = IntRange()
     type=int_range,
 )
 @click.option(
-    "-c", "--columns", help="Number of columns to create per table", default=5
+    "-c",
+    "--columns",
+    help="Number of columns to create per table",
+    default="4",
+    type=int_range,
 )
 @click.option(
     "--fks", help="Number of foreign keys per table", default="0,2", type=int_range
@@ -63,12 +67,11 @@ def cli(db_path, tables, rows, columns, fks, fts, fts4, seed):
     fake = Faker()
     if seed:
         fake.seed_instance(seed)
-    if columns < 2:
-        raise click.ClickException("--columns must be more than 2")
     rows_low, rows_high = rows
+    columns_low, columns_high = columns
     fks_low, fks_high = fks
-    if not fks_high < (columns - 1):
-        fks_high = columns - 1
+    if fks_high > columns_high:
+        fks_high = columns_high
     # Make a plan first, so we can update a progress bar
     plan = [fake.random.randint(rows_low, rows_high) for i in range(tables)]
     total_to_do = sum(plan)
@@ -82,7 +85,7 @@ def cli(db_path, tables, rows, columns, fks, fts, fts4, seed):
                 table_name = "_".join(fake.words())
             column_defs, generate = record_builder(
                 fake,
-                num_columns=columns,
+                num_columns=fake.random.randint(columns_low, columns_high),
                 num_fks=fake.random.randint(fks_low, fks_high),
             )
             with db.conn:

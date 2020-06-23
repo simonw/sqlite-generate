@@ -27,20 +27,21 @@ def test_rows(rows, low, high):
             assert low <= table.count <= high
 
 
-@pytest.mark.parametrize("columns", [2, 5, 10])
-def test_columns(columns):
+@pytest.mark.parametrize(
+    "columns,low,high", [("--columns=10", 10, 10), ("--columns=5,50", 5, 50)]
+)
+def test_columns(columns, low, high):
     runner = CliRunner()
     with runner.isolated_filesystem():
         result = runner.invoke(
             cli,
-            ["data.db", "--rows=1", "--columns={}".format(columns), "--seed=seed"],
+            ["data.db", "--rows=1", columns, "--seed=seed"],
             catch_exceptions=False,
         )
         assert 0 == result.exit_code, result.output
         db = sqlite_utils.Database("data.db")
         for table in db.tables:
-            assert columns == len(table.columns)
-            assert 1 == table.count
+            assert low <= len(table.columns) <= high
 
 
 def test_seed():
