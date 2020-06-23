@@ -22,6 +22,16 @@ You can use the `--tables` option to generate a different number of tables:
 
     sqlite-generate data.db --tables 20
 
+By default each table will contain a random number of rows between 0 and 200. You can customize this with the `--rows` option:
+
+    sqlite-generate data.db --rows 20
+
+This will insert 20 rows into each table.
+
+    sqlite-generate data.db --tables 500,2000
+
+This inserts a random number of rows between 500 and 2000 into each table.
+
 ## Development
 
 To contribute to this tool, first checkout the code. Then create a new virtual environment:
