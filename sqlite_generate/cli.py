@@ -3,8 +3,6 @@ from faker import Faker
 import sqlite_utils
 from .utils import record_builder
 
-fake = Faker()
-
 
 @click.command()
 @click.argument("db_path")
@@ -15,11 +13,15 @@ fake = Faker()
 @click.option(
     "-c", "--columns", help="Number of columns to create per table", default=5
 )
+@click.option("--seed", help="Specify as seed for the random generator")
 @click.version_option()
-def cli(db_path, tables, rows, columns):
+def cli(db_path, tables, rows, columns, seed):
     "Tool for generating demo SQLite databases"
     db = sqlite_utils.Database(db_path)
     existing_tables = set(db.table_names())
+    fake = Faker()
+    if seed:
+        fake.seed_instance(seed)
     if not (
         rows.isdigit()
         or (rows.count(",") == 1 and all(bit.isdigit() for bit in rows.split(",")))

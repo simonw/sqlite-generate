@@ -36,6 +36,10 @@ Each table will have 5 columns. You can change this using `--columns`:
 
     sqlite-generate data.db --columns 10
 
+You can control the random number seed used with the `--seed` option. This will result in the exact same database file being created by multiple runs of the tool:
+
+    sqlite-generate data.db --seed=myseed
+
 ## Development
 
 To contribute to this tool, first checkout the code. Then create a new virtual environment:

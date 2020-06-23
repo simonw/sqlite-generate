@@ -32,10 +32,28 @@ def test_columns(columns):
     runner = CliRunner()
     with runner.isolated_filesystem():
         result = runner.invoke(
-            cli, ["data.db", "--rows=1", "--columns={}".format(columns)]
+            cli, ["data.db", "--rows=1", "--columns={}".format(columns), "--seed=seed"]
         )
         assert 0 == result.exit_code, result.output
         db = sqlite_utils.Database("data.db")
         for table in db.tables:
             assert columns == len(table.columns)
             assert 1 == table.count
+
+
+def test_seed():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        runner.invoke(
+            cli, ["one.db", "--tables=1", "--rows=1", "--columns=2", "--seed=dog"]
+        )
+        runner.invoke(
+            cli, ["two.db", "--tables=1", "--rows=1", "--columns=2", "--seed=dog"]
+        )
+        # Files should be identical
+        assert open("one.db", "rb").read() == open("two.db", "rb").read()
+        # With a different seed, files should differ:
+        runner.invoke(
+            cli, ["three.db", "--tables=1", "--rows=1", "--columns=2", "--seed=cat"]
+        )
+        assert open("two.db", "rb").read() != open("three.db", "rb").read()
