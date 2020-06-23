@@ -27,7 +27,7 @@ jobs:
         pip install -e .
         pip install datasette datasette-publish-now
     - name: Build database
-      run: sqlite-generate demo.db
+      run: sqlite-generate demo.db --seed seed
     - name: Setup Node.js
       uses: actions/setup-node@v1
       with:
@@ -42,6 +42,5 @@ jobs:
           --title "sqlite-generate demo" \
           --about_url "https://github.com/simonw/sqlite-generate" \
           --about "simonw/sqlite-generate" \
-          --seed seed \
           --install datastte-block-robots \
           --public
