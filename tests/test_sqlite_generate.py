@@ -25,3 +25,17 @@ def test_rows(rows, low, high):
         assert 10 == len(db.table_names())
         for table in db.tables:
             assert low <= table.count <= high
+
+
+@pytest.mark.parametrize("columns", [2, 5, 10])
+def test_columns(columns):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(
+            cli, ["data.db", "--rows=1", "--columns={}".format(columns)]
+        )
+        assert 0 == result.exit_code, result.output
+        db = sqlite_utils.Database("data.db")
+        for table in db.tables:
+            assert columns == len(table.columns)
+            assert 1 == table.count

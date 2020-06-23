@@ -1,6 +1,7 @@
 import click
 from faker import Faker
 import sqlite_utils
+from .utils import record_builder
 
 fake = Faker()
 
@@ -11,8 +12,11 @@ fake = Faker()
 @click.option(
     "-r", "--rows", help="Number of rows to create per table", default="0,200"
 )
+@click.option(
+    "-c", "--columns", help="Number of columns to create per table", default=5
+)
 @click.version_option()
-def cli(db_path, tables, rows):
+def cli(db_path, tables, rows, columns):
     "Tool for generating demo SQLite databases"
     db = sqlite_utils.Database(db_path)
     existing_tables = set(db.table_names())
@@ -21,6 +25,8 @@ def cli(db_path, tables, rows):
         or (rows.count(",") == 1 and all(bit.isdigit() for bit in rows.split(",")))
     ):
         raise click.ClickException("Use --rows=low,high or --rows=exact")
+    if columns < 2:
+        raise click.ClickException("--columns must be more than 2")
     if rows.isdigit():
         rows_low = rows_high = int(rows)
     else:
@@ -29,9 +35,9 @@ def cli(db_path, tables, rows):
         table_name = None
         while table_name is None or db[table_name].exists():
             table_name = "_".join(fake.words())
+        column_defs, generate = record_builder(fake, columns)
         with db.conn:
-            db[table_name].create({"id": int, "name": str,}, pk="id")
+            db[table_name].create(column_defs, pk="id")
             db[table_name].insert_all(
-                {"name": fake.name()}
-                for j in range(fake.random.randint(rows_low, rows_high))
+                generate() for j in range(fake.random.randint(rows_low, rows_high))
             )

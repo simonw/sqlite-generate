@@ -32,6 +32,10 @@ This will insert 20 rows into each table.
 
 This inserts a random number of rows between 500 and 2000 into each table.
 
+Each table will have 5 columns. You can change this using `--columns`:
+
+    sqlite-generate data.db --columns 10
+
 ## Development
 
 To contribute to this tool, first checkout the code. Then create a new virtual environment:
